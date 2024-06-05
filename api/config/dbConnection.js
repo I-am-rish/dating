@@ -1,8 +1,11 @@
 const mongoose = require("mongoose");
-
+const db = require("./index");
 const connectDB = () => {
-  mongoose.connect("mongodb://localhost:27017/dating_coretta").then((data) => {
-    console.log("Database connected");
+  //
+  mongoose.connect(db.dbUri).then((data) => {
+    console.log(
+      `Database connected on ${data.connection.host} with port ${data.connection.port}`
+    );
   });
 };
 
