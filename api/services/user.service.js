@@ -69,15 +69,14 @@ class Users {
       return { success: true, user };
     } catch (error) {
       console.log("login user error ==> ", error);
-      return {success:false, message: error.message};
+      return { success: false, message: error.message };
     }
   }
 
   async loginByPhone(reqObj) {
     const { phone } = reqObj;
     try {
-      const getUser = await this.userModel.findOne({ phone });
-      // if (!getUser) return { success: false, message: "user not found!" };
+      let getUser = await this.userModel.findOne({ phone });
 
       //handle lat and long input and update in db
       let loc = {
@@ -96,8 +95,8 @@ class Users {
 
       //if not user then create user
       if (!getUser) {
-        const newUser = await this.userModel.create(reqObj);
-        return { success: true, newUser };
+        getUser = await this.userModel.create(reqObj);
+        // return { success: true, newUser };
       }
       await getUser.set(reqObj).save();
 
@@ -110,34 +109,36 @@ class Users {
         verification_type: verificationType,
       });
 
-      console.log("login by phone old verification ==> ", oldVerification);
-
-      if (!oldVerification.length) {
+      if (!oldVerification.verification.length) {
         await VerificationService.createVerification({
           user_id: getUser._id,
           phone: getUser.phone,
           verification_type: verificationType,
           otp,
         });
+      } else {
+        let updateVerification = {
+          user_id: getUser._id,
+          phone: getUser.phone,
+          verification_type: verificationType,
+          // attempts: oldVerification.verification.attempts + 1,
+          otp,
+        };
+
+        const updatedVerification =
+          await VerificationService.updateVerificationById(
+            oldVerification.verification[0]._id,
+            updateVerification
+          );
+        // console.log("else verification ==> ", updatedVerification);
+        if (!updatedVerification) {
+          return { success: false, message: "failed to update verification!" };
+        }
       }
-
-      let updateVerification = {
-        user_id: getUser._id,
-        phone: getUser.phone,
-        verification_type: verificationType,
-        attempts: oldVerification.verification.attempts + 1,
-        otp,
-      };
-
-      const updatedVerification = await VerificationService.createVerification(
-        updateVerification
-      );
-      // if(!updatedVerification.success) return ..............
 
       //twilio to send app
       // let message = "Your OTP to verify mobile on Bonding is " + otp;
       // //twilio.service.sendOTP(getUser.phone, message);
-
       return {
         success: true,
         message: "An OTP has been sent to your registered phone number",
@@ -156,18 +157,19 @@ class Users {
   async otpVerification(reqObj) {
     //user
     try {
-      const { otp, phone } = reqObj;
-      //get user by id from token info
-      const getUser = await this.userModel.findOne({ phone });
-      // console.log("otp veri. user ==> ", getUser);
+      const { otp, phone, email, verification_type } = reqObj;
+      let getUser;
+      if (verification_type === "phone") {
+        getUser = await this.userModel.findOne({ phone });
+      } else {
+        getUser = await this.userModel.findOne({ email });
+      }
       if (!getUser) return { success: false, message: "invalid user!" };
       const oldVerification = await VerificationService.getVerificationByQuery({
         user_id: getUser._id,
-        verification_type: reqObj.verification_type,
-        otp: reqObj.otp,
+        verification_type,
+        otp,
       });
-
-      // console.log("otp verification service ==> ", oldVerification);
 
       if (!oldVerification.verification.length)
         return { success: false, message: "OTP expired or invalid OTP" };
@@ -179,12 +181,127 @@ class Users {
       //   };
       // }
 
-      let loginBy = "phone";
-      //update data
+      if (verification_type === "email") {
+        await this.userModel.updateOne(
+          { _id: getUser._id },
+          {
+            $set: {
+              email_verified: true,
+            },
+          }
+        );
+      } else {
+        await this.userModel.updateOne(
+          { _id: getUser._id },
+          {
+            $set: {
+              phone_verified: true,
+            },
+          }
+        );
+      }
 
-      return { success: true, message: "otp verified" };
+      return { success: true, getUser };
     } catch (err) {
       return { success: false, message: err.message };
+    }
+  }
+
+  async forgetPassword(reqObj) {
+    const { email, verification_type } = reqObj;
+    let verificationDataExist = false;
+    try {
+      const getUser = await this.userModel.findOne({ email });
+      if (!getUser) return { success: false, message: "User not found!" };
+
+      //send otp to email and verify otp
+      const otp = generateOTP(4);
+      let verificationType = verification_type;
+
+      const oldVerification = await VerificationService.getVerificationByQuery({
+        user_id: getUser._id,
+        verification_type: verificationType,
+      });
+
+      // console.log("forgot pass oldVerification ==> ", oldVerification);
+
+      if (!oldVerification.verification.length) {
+        const newVerification = await VerificationService.createVerification({
+          user_id: getUser._id,
+          email: getUser.email,
+          verification_type,
+          otp,
+        });
+        if (newVerification) return { success: true, newVerification };
+      } else {
+        let updateVerification = {
+          email: getUser.email,
+          verification_type,
+          // attempts: oldVerification.verification.attempts + 1,
+          otp,
+        };
+
+        const { updatedVerification } =
+          await VerificationService.updateVerificationById(
+            oldVerification.verification[0]._id,
+            updateVerification
+          );
+
+        if (!updatedVerification)
+          return { success: false, message: "failed to updated verification!" };
+
+        // console.log("updatedVerification ==> ", updatedVerification);
+
+        // const newData = await VerificationService.getVerificationById(
+        //   oldVerification.verification[0]._id
+        // );
+        // console.log("new data ==> ", newData);
+
+        return { success: true, updateVerification };
+      }
+      //twilio to send app
+    } catch (error) {
+      console.log("errorrrrr");
+      return { success: false, message: error.message };
+    }
+  }
+
+  async resetPassword(reqObj) {
+    const { password, confirmPassword, email } = reqObj;
+    try {
+      const getUser = await this.userModel.findOne({ email });
+      console.log("id", getUser);
+      if (!getUser) return { success: false, message: "Invalid user!" };
+
+      getUser.password = password;
+      const passwordUpdated = await getUser.save();
+
+      if (passwordUpdated)
+        return { success: true, message: "Password updated successfully!" };
+    } catch (error) {
+      return { success: false, message: "failed to update password!" };
+    }
+  }
+
+  async profile(user_id) {
+    try {
+      const user = await this.userModel.findById(user_id);
+      if (!user) return { success: false, message: "user not found!" };
+      return { success: true, user };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async updateProfile(reqObj) {
+    const { user_id } = reqObj;
+    try {
+      const user = await this.userModel.findById(user_id);
+      if (!user) return { success: false, message: "user not found!" };
+      user.set(reqObj).save();
+      return { success: true, user };
+    } catch (error) {
+      return { success: false, message: error.message };
     }
   }
 }

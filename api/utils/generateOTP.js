@@ -3,7 +3,7 @@ const generateOTP = (digits) => {
   for (let i = 0; i < digits; i++) {
     OTP += Math.floor(Math.random() * 10);
   }
-  return OTP;
+  return Number(OTP);
 };
 
 module.exports = generateOTP;

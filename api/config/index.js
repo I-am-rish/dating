@@ -12,7 +12,7 @@ module.exports = {
     expiresIn: "1y",
   },
 
-  mobileJwtToken: {
+  mobileTokenInfo: {
     secretKey:
       "929FFGG453ERYUI456JKL00KIL42001926589GFGJKDHJJSBJ65568BBHHFSJS90",
     expiresIn: "1h",
@@ -21,7 +21,7 @@ module.exports = {
     algorithm: "HS256",
   },
 
-  emailJwtTokenInfo: {
+  emailTokenInfo: {
     secretKey: "32j4h324hj3g4h3jghj3ghj32g4hj231g4",
     expiresIn: "1h",
     issuer: "dating",
@@ -29,7 +29,7 @@ module.exports = {
     algorithm: "HS256",
   },
 
-  passwordResetJwtTokenInfo: {
+  passwordResetTokenInfo: {
     secretKey: "j2h3hj24jh324",
     expiresIn: "1h",
     issuer: "dating",

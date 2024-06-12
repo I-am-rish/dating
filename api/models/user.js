@@ -116,6 +116,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    otp_verified:{
+      type: Boolean,
+      default: false,
+    },
     login_way: {
       type: String,
       enum: ["local", "google"],
@@ -165,7 +169,7 @@ const userSchema = new mongoose.Schema(
       trim: true,
       default: [],
     },
-    my_sexual_orientation: {
+    my_sexual_orientations: {
       type: [String],
       trim: true,
       default: [],
@@ -235,12 +239,12 @@ const userSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
-    passion: {
+    passions: {
       type: [String],
       trim: true,
       default: [],
     },
-    my_subscription: {
+    my_subscriptions: {
       type: [String],
       default: [],
     },

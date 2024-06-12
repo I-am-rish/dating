@@ -18,15 +18,11 @@ module.exports = {
   },
 
   // CUSTOM RESPONSE FOR UNAUTHORIZE
-  unauthorized: (
-    res,
-    body = { message: "You are not authorized to access this resource" },
-    statusCode = 401
-  ) => {
+  unauthorized: (res, body, statusCode = 401) => {
     return res.status(statusCode).json({
       success: false,
-      message: body.message,
-      result: body.data,
+      message: body.message || "You are not authorized to access this resource",
+      result: body.data || [],
     });
   },
 };

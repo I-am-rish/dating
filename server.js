@@ -4,8 +4,8 @@ const http = require("http");
 //SERVER
 // const server = http.createServer(app);
 
-app.listen(5100, () => {
-  console.log("Server is running")
+app.listen(7100, () => {
+  console.log("Server is running");
 });
 // server.on("listening", () => {
 //   console.log(

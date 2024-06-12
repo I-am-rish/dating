@@ -13,6 +13,7 @@ module.exports = {
   getVerificationByQuery: async (query) => {
     try {
       const verification = await VerificationModel.find(query);
+      // console.log("getVerificationByQuery ==> ", query);
       if (!verification) return { success: false };
       return { success: true, verification };
     } catch (err) {
@@ -32,11 +33,13 @@ module.exports = {
 
   updateVerificationById: async (id, newVerification) => {
     try {
-      const updatedVerification = await VerificationModel.updateById(
+      const updatedVerification = await VerificationModel.findByIdAndUpdate(
         id,
         newVerification
       );
-      return { success: true, updatedVerification };
+      // console.log("updateVerificationById ====> ", updatedVerification);
+
+      if (updatedVerification) return { success: true, updatedVerification };
     } catch (err) {
       return { success: false, message: err.message };
     }
